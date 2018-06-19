@@ -6,11 +6,15 @@ import signal
 import sys
 
 import u2fraw
-import u2fhid
+from u2fhid import U2FHid
+from queue import Queue
+from channel import mainChannel
+from stoppableThread import StoppableThread
 
 
 PID = os.getpid()
-
+taskQueue = Queue()
+hid = U2FHid(taskQueue)
 
 def print_usage_then_exit():
     print('''Usage:
@@ -24,10 +28,16 @@ default value is "~/.v2f".
 
 
 def main():
-    # set up SIGINT handler
+    # # set up SIGINT handler
     def SIGINT_handler(*_, **__):
         print('\nA SIGINT (CTRL-C) signal is detected')
-        sys.exit(0)
+        print("os.close(u2fhid.fd) ")
+        t.stop()
+        print("t.stop()")
+        t1.stop()
+        print("t1.stop()")
+        reactor.stop()
+        # sys.exit(0)
     signal.signal(signal.SIGINT, SIGINT_handler)
 
     # determine V2F_DIR from argument list
@@ -85,7 +95,89 @@ def main():
 
     u2fraw.initialize(DEVICE_MASTER_SECRET_KEY, update_counter, V2F_DIR)
 
-    u2fhid.run_uhid_event_loop()
+    mainChannel.setObserver(onMessage)
+
+    hid.setup_uhid()
+    t = StoppableThread(hidWorker)    
+    t.daemon = True
+    t.start()
+    # t = StoppableThread(mockWorker)    
+    # t.daemon = True
+    # t.start()
+    t1 = StoppableThread(infoExchangeWorker)    
+    t1.daemon = True
+    t1.start()
+
+    # import sys
+    from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
+
+    from twisted.python import log
+    from twisted.internet import reactor
+    from channel import MyServerProtocol
+
+    log.startLogging(sys.stdout)
+
+    print("main task queue:", taskQueue)
+
+    factory = WebSocketServerFactory(u"ws://127.0.0.1:9000")
+    factory.protocol = MyServerProtocol
+    reactor.listenTCP(9000, factory)
+    reactor.run()
+    # main thread will be block      
+
+import time
+def hidWorker(shouldStop):    
+    while not shouldStop():    
+        time.sleep(1)
+        hid.uhid_process_event_from_kernel(shouldStop)
+        # print("hidWorker tick")
+    
+def infoExchangeWorker(shouldStop):
+    while not shouldStop():          
+        time.sleep(1)
+        # print("infoExchangeWorker tick----------")    
+        if not taskQueue.empty():
+            task = taskQueue.get()
+            print("infoExchangeWorker----------")
+            print(task.dest)
+            print(task.message)
+            if task.dest == "HID":
+                hid.send_response_message(task.message)
+
+            elif task.dest == "CHANNEL":
+                # send to channel
+                if mainChannel.isOnline():
+                    mainChannel.sendMessage(task.message)                
+
+# def mockWorker(shouldStop):
+#     from task import ChannelRawTask
+#     while not shouldStop():    
+#         time.sleep(1)      
+#         t = ChannelRawTask(b'123')
+#         taskQueue.put(t)
+#         print("mockWorker queue:", taskQueue)
+        
+
+import json
+from task import HIDTask
+# TODO: maybe need to move it to another class
+def onMessage(payload, isBinary):    
+    print("onMessage===============")
+    print(isBinary)    
+    global taskQueue
+
+    payload = payload.decode('utf8')
+    _json = json.loads(payload)
+    
+    print(_json)    
+
+    print(_json["sw"])    
+    sw = int(_json["sw"], 16)
+    resp = bytes.fromhex(_json["resp"])
+    
+    t = HIDTask(sw, resp)
+    taskQueue.put(t)
+
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import sys
 import time
 
 import u2fcrypto
-
+from task import HIDTask, ChannelTask, ChannelRawTask
 
 KGEN_KEY = None
 HMAC_KEY = None
@@ -36,33 +36,70 @@ def initialize(device_master_secret_key, update_counter, v2f_dir):
     V2F_DIR = v2f_dir
 
 
-def process_u2fraw_request(raw_request):
+def process_u2fraw_request(raw_request, taskQueue):
+    # from v2f import taskQueue
+    # global taskQueue
     try:
         apducmd = decode_apdu_command(raw_request)
 
         if apducmd.ins == U2F_VERSION:
             assert len(apducmd.data) == 0
+            
             sw, resp = generate_get_version_response_message()
+            t = HIDTask(sw, resp)
+            taskQueue.put(t)
+            print("queue generate_get_version_response_message", resp)
+            print(taskQueue.empty())
+            print("raw queue:", taskQueue)
+
         elif apducmd.ins == U2F_REGISTER:
+            # send to mobile app
             assert len(apducmd.data) == 64
             application_parameter = apducmd.data[32:]
             challenge_parameter = apducmd.data[:32]
-            sw, resp = generate_registration_response_message(application_parameter, challenge_parameter)
+
+            # t = ChannelTask()
+            # t.setFuncName("generate_registration_response_message")
+            # t.setArgs([application_parameter, challenge_parameter])
+            t = ChannelRawTask(raw_request)
+            taskQueue.put(t)
+            print("queue generate_registration_response_message")
+            # sw, resp = generate_registration_response_message(application_parameter, challenge_parameter)
         elif apducmd.ins == U2F_AUTHENTICATE and apducmd.p1 == 0x07:
+            # send to mobile app
             assert len(apducmd.data) >= 65
             assert len(apducmd.data[65:]) == apducmd.data[64]
-            sw, resp = generate_key_handle_checking_response(apducmd.data[32:64], apducmd.data[65:])
+
+            # t = ChannelTask()
+            # t.setFuncName("generate_key_handle_checking_response")
+            # t.setArgs([apducmd.data[32:64], apducmd.data[65:]])
+            t = ChannelRawTask(raw_request)
+            taskQueue.put(t)
+            print("queue generate_key_handle_checking_response")
+            # sw, resp = generate_key_handle_checking_response(apducmd.data[32:64], apducmd.data[65:])
         elif apducmd.ins == U2F_AUTHENTICATE and apducmd.p1 == 0x03:
+            
             assert len(apducmd.data) >= 65
             assert len(apducmd.data[65:]) == apducmd.data[64]
-            sw, resp = generate_authentication_response_message(apducmd.data[32:64], apducmd.data[0:32], apducmd.data[65:])
-        else:
-            sw, resp = SW_INS_NOT_SUPPORTED, b''
+
+            # t = ChannelTask()
+            # t.setFuncName("generate_authentication_response_message")
+            # t.setArgs(apducmd.data[32:64], apducmd.data[0:32], apducmd.data[65:])
+            t = ChannelRawTask(raw_request)
+            taskQueue.put(t)
+            print("queue generate_authentication_response_message")
+            # sw, resp = generate_authentication_response_message(apducmd.data[32:64], apducmd.data[0:32], apducmd.data[65:])
+        else:            
+            sw, resp = SW_INS_NOT_SUPPORTED, b''            
+            t = HIDTask(sw, resp)
+            taskQueue.put(t)            
 
     except AssertionError:
         sw, resp = SW_WRONG_DATA, b''
+        t = HIDTask(sw, resp)
+        taskQueue.put(t)            
 
-    return resp + sw.to_bytes(2, 'big')
+    return    
 
 
 def _is_good_key_handle(application_parameter, key_handle):
