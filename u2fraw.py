@@ -46,7 +46,9 @@ def process_u2fraw_request(raw_request, taskQueue):
             assert len(apducmd.data) == 0
             
             sw, resp = generate_get_version_response_message()
-            t = HIDTask(sw, resp)
+            t = HIDTask(resp)
+            t.setResponse(sw, resp)
+            
             taskQueue.put(t)
             print("queue generate_get_version_response_message", resp)
             print(taskQueue.empty())
@@ -64,6 +66,7 @@ def process_u2fraw_request(raw_request, taskQueue):
             t = ChannelRawTask(raw_request)
             taskQueue.put(t)
             print("queue generate_registration_response_message")
+            print(raw_request.hex())
             # sw, resp = generate_registration_response_message(application_parameter, challenge_parameter)
         elif apducmd.ins == U2F_AUTHENTICATE and apducmd.p1 == 0x07:
             # send to mobile app

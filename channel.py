@@ -22,11 +22,6 @@ class MyServerProtocol(WebSocketServerProtocol):
     def onClose(self, wasClean, code, reason):
         print("WebSocket connection closed: {}".format(reason))
 
-    # def send(self, data):
-    #     data = format(data.encode('utf8'))
-    #     protocol = MyServerProtocol()
-    #     reactor.callFromThread(protocol.sendMessage, protocol, data) 
-
 class Channel():
     session = None
     observer = None

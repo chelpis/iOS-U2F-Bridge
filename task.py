@@ -8,13 +8,14 @@ class Task:
         self.message = message
 
 
-class HIDTask(Task):    
-    sw = ""
-
-    def __init__(self, sw, message):        
+class HIDTask(Task):        
+    def __init__(self, message):        
         self.dest = "HID"         
-        self.sw = sw
+        # self.sw = sw
         self.message = message
+
+    def setResponse(self, sw, message):
+        self.message = message + sw.to_bytes(2, 'big')
 
 class ChannelTask(Task):    
     funcName = ""

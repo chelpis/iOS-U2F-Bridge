@@ -202,7 +202,7 @@ class U2FHid:
         if current_time < X.deadline:
             return # TODO respond a busy error
         elif initpkt.bcnt > 57:
-            X = self.ReqMsgStat(
+            X = ReqMsgStat(
                 initpkt.cid, initpkt.cmd, initpkt.bcnt, initpkt.data, current_time + 3000)
         elif initpkt.cmd == U2FHID_INIT:
             self._process_request_message_INIT(initpkt.data[:initpkt.bcnt])
@@ -215,9 +215,9 @@ class U2FHid:
     def _process_request_continuation_packet(self, octets):
         global X
 
-        contpkt = self.ContPacket(*struct.unpack(CONT_PACKET_FMT, octets))
+        contpkt = ContPacket(*struct.unpack(CONT_PACKET_FMT, octets))
         assert 1 <= contpkt.cid <= 0xfffffffe and 0 <= contpkt.seq <= 127
-        current_time = get_current_timestamp()
+        current_time = self.get_current_timestamp()
 
         if current_time >= X.deadline:
             return
@@ -272,9 +272,6 @@ class U2FHid:
     def _process_request_message_PING(self, cid, data):
         print('U2FHID> got PING request message cid=0x%08x data=[%s]' % (cid, data.hex()))
         self._send_response_message(cid, U2FHID_PING, data)
-
-    # def process_request_message_MSG(self, data):
-    #     self._process_request_message_MSG(self.cid, data)
         
     def _process_request_message_MSG(self, cid, data):
         print('U2FHID> got MSG request message cid=0x%08x data=[%s]' % (cid, data.hex()))

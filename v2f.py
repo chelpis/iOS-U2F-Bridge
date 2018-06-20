@@ -141,14 +141,20 @@ def infoExchangeWorker(shouldStop):
             print("infoExchangeWorker----------")
             print(task.dest)
             print(task.message)
-            if task.dest == "HID":
+            if task.dest == "HID":                
                 hid.send_response_message(task.message)
 
-            elif task.dest == "CHANNEL":
+            elif task.dest == "Channel":
+                print(task.message.hex())
                 # send to channel
                 if mainChannel.isOnline():
                     mainChannel.sendMessage(task.message)                
 
+        # if mainChannel.isOnline():
+        #     m = b'\x00\x01\x03\x00\x00\x00@\xec7\x7fhX\xd9*\x86\xea}\xeb#\x91\xbb\xe0\x85\xd8\x07iY\xc2\xa56\xe7\xc0\xdf^\xbb\x04\xf9\x9d\xd4Ug;Q8\xcc\x90\xd3\xb7\xf3+\xfd\xadj8\xa8\xed\xd7\xb3U\xb7z\xb9y!\x96\xf1\x06\xd1l\xa3\x12\x00\x00'
+        #     mainChannel.sendMessage(m)                
+
+        
 # def mockWorker(shouldStop):
 #     from task import ChannelRawTask
 #     while not shouldStop():    
@@ -164,18 +170,11 @@ from task import HIDTask
 def onMessage(payload, isBinary):    
     print("onMessage===============")
     print(isBinary)    
+    print(payload)    
+
     global taskQueue
-
-    payload = payload.decode('utf8')
-    _json = json.loads(payload)
-    
-    print(_json)    
-
-    print(_json["sw"])    
-    sw = int(_json["sw"], 16)
-    resp = bytes.fromhex(_json["resp"])
-    
-    t = HIDTask(sw, resp)
+        
+    t = HIDTask(payload)
     taskQueue.put(t)
 
 
