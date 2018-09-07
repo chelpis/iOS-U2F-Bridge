@@ -101,9 +101,7 @@ def main():
     t = StoppableThread(hidWorker)    
     t.daemon = True
     t.start()
-    # t = StoppableThread(mockWorker)    
-    # t.daemon = True
-    # t.start()
+    
     t1 = StoppableThread(infoExchangeWorker)    
     t1.daemon = True
     t1.start()
@@ -148,21 +146,7 @@ def infoExchangeWorker(shouldStop):
                 print(task.message.hex())
                 # send to channel
                 if mainChannel.isOnline():
-                    mainChannel.sendMessage(task.message)                
-
-        # if mainChannel.isOnline():
-        #     m = b'\x00\x01\x03\x00\x00\x00@\xec7\x7fhX\xd9*\x86\xea}\xeb#\x91\xbb\xe0\x85\xd8\x07iY\xc2\xa56\xe7\xc0\xdf^\xbb\x04\xf9\x9d\xd4Ug;Q8\xcc\x90\xd3\xb7\xf3+\xfd\xadj8\xa8\xed\xd7\xb3U\xb7z\xb9y!\x96\xf1\x06\xd1l\xa3\x12\x00\x00'
-        #     mainChannel.sendMessage(m)                
-
-        
-# def mockWorker(shouldStop):
-#     from task import ChannelRawTask
-#     while not shouldStop():    
-#         time.sleep(1)      
-#         t = ChannelRawTask(b'123')
-#         taskQueue.put(t)
-#         print("mockWorker queue:", taskQueue)
-        
+                    mainChannel.sendMessage(task.message)                        
 
 import json
 from task import HIDTask

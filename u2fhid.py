@@ -199,6 +199,8 @@ class U2FHid:
         self.cid = initpkt.cid
         current_time = self.get_current_timestamp()
 
+        print("initpkt.bcnt:", initpkt.bcnt)
+        
         if current_time < X.deadline:
             return # TODO respond a busy error
         elif initpkt.bcnt > 57:
