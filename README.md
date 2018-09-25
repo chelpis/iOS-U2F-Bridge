@@ -1,3 +1,6 @@
+# iOS-U2F-Bridge
+Relay U2F packet between desktop and iOS device.
+
 **WARNING:**
 
 This project is still in its pre-alpha stage.  Serious refactoring and
