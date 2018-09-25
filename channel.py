@@ -33,7 +33,6 @@ class Channel():
 
     def sendMessage(self, message):    
         if self.session != None:
-            print("dannny")
             self.session.sendMessage(message, True)
 
     def onMessage(self, payload, isBinary):
@@ -47,20 +46,3 @@ class Channel():
         
 mainChannel = Channel()
 
-import signal
-import sys
-import ssl
-from SimpleWebSocketServer import WebSocket, SimpleWebSocketServer, SimpleSSLWebSocketServer
-from optparse import OptionParser
-
-class SimpleEcho(WebSocket):
-    def handleMessage(self):
-        # self.sendMessage(self.data)
-        mainChannel.onMessage(self.data, False)
-    def handleConnected(self):
-        global mainChannel    
-        mainChannel.register(self)        
-        pass
-
-    def handleClose(self):
-        pass
